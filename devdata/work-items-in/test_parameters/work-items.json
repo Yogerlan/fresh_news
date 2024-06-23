@@ -1,7 +1,9 @@
 [
   {
       "payload": {
-         "search_phrase": "Javier Milei"
+         "search_phrase": "Elon Musk",
+         "categories": "Stories,Videos",
+         "months": 2
       },
       "files": {}
   }

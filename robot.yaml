@@ -3,7 +3,7 @@
 
 tasks:
   Run Task:
-    shell: python -m robocorp.tasks run tasks.py -t news_collector
+    shell: python -m robocorp.tasks run tasks.py -t collect_news
 
 environmentConfigs:
   - environment_windows_amd64_freeze.yaml
