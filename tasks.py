@@ -23,7 +23,7 @@ class APNewsCollector:
 
     def __open_website(self):
         """Opens the browser instance & navigates to the news website"""
-        self.__selenium.open_browser(self.URL)
+        self.__selenium.open_browser(self.URL, service_log_path="output/geckodriver.log")
 
     def __search_news(self):
         """Seeks news using the search phrase"""
@@ -49,7 +49,8 @@ class APNewsCollector:
         while found and len(categories):
             found = False
             self.__selenium.click_element_when_clickable(
-                "css:div.SearchFilter-heading"
+                "css:div.SearchFilter-heading",
+                10,
             )
 
             for element in self.__selenium.get_webelements(
