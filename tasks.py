@@ -23,7 +23,11 @@ class APNewsCollector:
 
     def __open_website(self):
         """Opens the browser instance & navigates to the news website"""
-        self.__selenium.open_browser(self.URL, service_log_path="output/geckodriver.log")
+        self.__selenium.open_browser(
+            self.URL,
+            'headlessfirefox',
+            service_log_path="output/geckodriver.log",
+        )
 
     def __search_news(self):
         """Seeks news using the search phrase"""
