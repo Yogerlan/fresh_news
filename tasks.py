@@ -23,59 +23,75 @@ class APNewsCollector:
 
     def __open_website(self):
         """Opens the browser instance & navigates to the news website"""
-        self.__selenium.open_browser(
-            self.URL,
-            'headlessfirefox',
-            service_log_path="output/geckodriver.log",
-        )
+        try:
+            self.__selenium.open_browser(
+                self.URL,
+                'headlessfirefox',
+                service_log_path="output/geckodriver.log",
+            )
+        except Exception as ex:
+            logging.exception("APNewsCollector__open_website", ex.args)
+            self.__selenium.screenshot(
+                filename="output/open_website_exception.png",
+            )
 
     def __search_news(self):
         """Seeks news using the search phrase"""
-        self.__selenium.click_button("css:button.SearchOverlay-search-button")
-        self.__selenium.input_text(
-            'css:input.SearchOverlay-search-input[name="q"]',
-            self.__search_phrase,
-        )
-        self.__selenium.click_button("css:button.SearchOverlay-search-submit")
+        try:
+            self.__selenium.click_button(
+                "css:button.SearchOverlay-search-button",
+            )
+            self.__selenium.input_text(
+                'css:input.SearchOverlay-search-input[name="q"]',
+                self.__search_phrase,
+            )
+            self.__selenium.click_button(
+                "css:button.SearchOverlay-search-submit",
+            )
+        except Exception as ex:
+            logging.exception("APNewsCollector__search_news", ex.args)
+            self.__selenium.screenshot(
+                filename="output/search_news_exception.png",
+            )
 
     def __filter_news(self):
         """Sorts the search results & filters them by categories"""
-        if self.__sort_by:
-            self.__selenium.select_from_list_by_label(
-                'css:select.Select-input[name="s"]',
-                self.__sort_by,
-            )
+        try:
+            if self.__sort_by:
+                self.__selenium.select_from_list_by_label(
+                    'css:select.Select-input[name="s"]',
+                    self.__sort_by,
+                )
 
-        categories = {category.lower()
-                      for category in self.__categories.split(",")}
-        found = True
+            categories = {category.lower()
+                          for category in self.__categories.split(",")}
+            found = True
 
-        while found and len(categories):
-            found = False
+            while found and len(categories):
+                found = False
 
-            try:
                 self.__selenium.click_element_when_clickable(
                     "css:div.SearchFilter-heading",
                 )
-            except Exception as ex:
-                logging.exception(ex.args[0])
-                self.__selenium.screenshot(filename="output/exception.png")
 
-                break
+                for element in self.__selenium.get_webelements(
+                    "css:div.SearchFilterInput div.CheckboxInput label.CheckboxInput-label"
+                ):
+                    element_text = element.text.lower()
 
-            for element in self.__selenium.get_webelements(
-                "css:div.SearchFilterInput div.CheckboxInput label.CheckboxInput-label"
-            ):
-                element_text = element.text.lower()
+                    if element_text in categories:
+                        self.__selenium.select_checkbox(
+                            element.find_element("name", "f2")
+                        )
+                        found = True
+                        categories.remove(element_text)
 
-                if element_text in categories:
-                    self.__selenium.select_checkbox(
-                        element.find_element("name", "f2")
-                    )
-                    found = True
-                    categories.remove(element_text)
-
-                    break
+                        break
+        except Exception as ex:
+            logging.exception("APNewsCollector__filter_news", ex.args)
+            self.__selenium.screenshot(
+                filename="output/filter_news_exception.png",
+            )
 
     def __output_results(self):
         self.__selenium.screenshot(filename="output/apnews.png")
