@@ -29,6 +29,7 @@ class APNewsCollector:
                 'headlessfirefox',
                 service_log_path="output/geckodriver.log",
             )
+            self.__selenium.set_selenium_implicit_wait(5)
 
             # Accept onetrush modal
             if self.__selenium.is_element_visible(
