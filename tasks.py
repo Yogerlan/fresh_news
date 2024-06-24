@@ -52,10 +52,16 @@ class APNewsCollector:
 
         while found and len(categories):
             found = False
-            self.__selenium.click_element_when_clickable(
-                "css:div.SearchFilter-heading",
-                10,
-            )
+
+            try:
+                self.__selenium.click_element_when_clickable(
+                    "css:div.SearchFilter-heading",
+                )
+            except Exception as ex:
+                logging.exception(ex.args[0])
+                self.__selenium.screenshot(filename="output/exception.png")
+
+                break
 
             for element in self.__selenium.get_webelements(
                 "css:div.SearchFilterInput div.CheckboxInput label.CheckboxInput-label"
