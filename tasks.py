@@ -73,7 +73,7 @@ class APNewsCollector:
 
     def __output_results(self):
         self.__selenium.screenshot(filename="output/apnews.png")
-        self.__selenium.print_page_as_pdf(filename="output/apnews.pdf")
+        # self.__selenium.print_page_as_pdf(filename="output/apnews.pdf")
 
 
 @task
