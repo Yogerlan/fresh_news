@@ -53,6 +53,8 @@ class APNewsCollector:
             self.__selenium.screenshot(
                 filename="output/search_news_exception.png",
             )
+            with open("output/source.html", "w") as src:
+                src.write(self.__selenium.get_source())
 
     def __filter_news(self):
         """Sorts the search results & filters them by categories"""
