@@ -30,14 +30,6 @@ class APNewsCollector:
                 service_log_path="output/geckodriver.log",
             )
             self.__selenium.set_selenium_implicit_wait(5)
-
-            # Accept onetrush modal
-            if self.__selenium.is_element_visible(
-                "css:button#onetrust-accept-btn-handler",
-            ):
-                self.__selenium.click_button(
-                    "css:button#onetrust-accept-btn-handler",
-                )
         except Exception as ex:
             logging.exception("APNewsCollector__open_website", ex.args)
             self.__selenium.screenshot(
@@ -47,6 +39,14 @@ class APNewsCollector:
     def __search_news(self):
         """Seeks news using the search phrase"""
         try:
+            # Accept onetrush modal
+            if self.__selenium.is_element_visible(
+                "css:button#onetrust-accept-btn-handler",
+            ):
+                self.__selenium.click_button(
+                    "css:button#onetrust-accept-btn-handler",
+                )
+
             self.__selenium.click_button(
                 "css:button.SearchOverlay-search-button",
             )
