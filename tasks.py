@@ -29,6 +29,14 @@ class APNewsCollector:
                 'headlessfirefox',
                 service_log_path="output/geckodriver.log",
             )
+
+            # Accept onetrush modal
+            if self.__selenium.is_element_visible(
+                "css:button#onetrust-accept-btn-handler",
+            ):
+                self.__selenium.click_button(
+                    "css:button#onetrust-accept-btn-handler",
+                )
         except Exception as ex:
             logging.exception("APNewsCollector__open_website", ex.args)
             self.__selenium.screenshot(
@@ -53,8 +61,6 @@ class APNewsCollector:
             self.__selenium.screenshot(
                 filename="output/search_news_exception.png",
             )
-            with open("output/source.html", "w") as src:
-                src.write(self.__selenium.get_source())
 
     def __filter_news(self):
         """Sorts the search results & filters them by categories"""
@@ -82,9 +88,7 @@ class APNewsCollector:
                     element_text = element.text.lower()
 
                     if element_text in categories:
-                        self.__selenium.select_checkbox(
-                            element.find_element("name", "f2")
-                        )
+                        self.__selenium.click_element(element)
                         found = True
                         categories.remove(element_text)
 
