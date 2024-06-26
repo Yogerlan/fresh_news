@@ -10,7 +10,6 @@ from selenium.common.exceptions import (NoSuchElementException,
 from selenium.webdriver.common.by import By
 
 OUTPUT_DIR = "output"
-PICTURES_DIR = os.path.join(OUTPUT_DIR, "pictures")
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 
@@ -104,7 +103,7 @@ class News:
                 pic_sha1 = sha1(pic_bytes).hexdigest()
                 picture = f"{pic_sha1}.png"
 
-                with open(os.path.join(PICTURES_DIR, picture), "wb") as f:
+                with open(os.path.join(OUTPUT_DIR, picture), "wb") as f:
                     f.write(pic_bytes)
 
                 self.__picture = picture
@@ -158,10 +157,6 @@ class APNewsCollector:
         self.__sort_by = sort_by
         self.__selenium = Selenium()
         self.__calendar = Calendar()
-
-        # Optimization: checks pictures folder once
-        if not os.path.exists(PICTURES_DIR):
-            os.mkdir(PICTURES_DIR)
 
     def collect_news(self):
         self.__open_website()
