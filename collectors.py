@@ -34,6 +34,7 @@ class News:
 class APNewsCollector:
     URL = "https://apnews.com/"
     FAULTS_TOLERANCE = 10
+    ONE_TRUST_ACCEPT_BTN = "css:button#onetrust-accept-btn-handler"
 
     def __init__(self, search_phrase, categories="", months=0, sort_by="Newest"):
         self.__search_phrase = search_phrase
@@ -58,7 +59,6 @@ class APNewsCollector:
                 'headlessfirefox',
                 service_log_path=os.path.join(OUTPUT_DIR, "geckodriver.log"),
             )
-            # self.__selenium.set_selenium_implicit_wait(10)
         except Exception as ex:
             logging.exception("APNewsCollector__open_website", ex.args)
             self.__selenium.screenshot(
@@ -72,11 +72,16 @@ class APNewsCollector:
         """Seeks news using the search phrase"""
         try:
             # Accept onetrush modal
+            self.__selenium.wait_until_page_contains_element(
+                self.ONE_TRUST_ACCEPT_BTN,
+                5,
+            )
+
             if self.__selenium.is_element_visible(
-                "css:button#onetrust-accept-btn-handler",
+                self.ONE_TRUST_ACCEPT_BTN,
             ):
                 self.__selenium.click_button(
-                    "css:button#onetrust-accept-btn-handler",
+                    self.ONE_TRUST_ACCEPT_BTN,
                 )
 
             self.__selenium.click_button(
