@@ -201,9 +201,7 @@ class APNewsCollector:
 
         while found and len(categories):
             found = False
-            self.__selenium.click_element_when_clickable(
-                "css:div.SearchFilter-heading"
-            )
+            self.__click_searchfilter_heading()
 
             for element in self.__selenium.get_webelements(
                 "css:div.SearchFilterInput div.CheckboxInput label.CheckboxInput-label"
@@ -216,6 +214,22 @@ class APNewsCollector:
                     categories.remove(element_text)
 
                     break
+
+    def __click_searchfilter_heading(self):
+        attempts = 2
+
+        while attempts:
+            try:
+                self.__selenium.click_element_when_clickable(
+                    "css:div.SearchFilter-heading"
+                )
+
+                break
+            except (NoSuchElementException, StaleElementReferenceException) as ex:
+                attempts -= 1
+                logging.info(
+                    f"ApNewsCollector__click_searchfilter_headings ({ex}) remaining attempts: {attempts}"
+                )
 
     def __get_news(self):
         """Gets the news list within the requested months"""
