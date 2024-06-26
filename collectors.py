@@ -148,11 +148,13 @@ class APNewsCollector:
     FAULTS_TOLERANCE = 5
     ONE_TRUST_ACCEPT_BTN = "css:button#onetrust-accept-btn-handler"
 
-    def __init__(self, search_phrase, categories="", months=0, sort_by="Newest"):
+    def __init__(self, search_phrase, categories="", months=0, sort_by="Newest", timeout=170):
         self.__search_phrase = search_phrase
         self.__categories = categories
         self.__months = months if months == 0 else months - 1
-        self.__now = datetime.now().strftime(DATE_FORMAT)
+        now = datetime.now()
+        self.__now = now.strftime(DATE_FORMAT)
+        self.__timeout = now.timestamp() + timeout
         self.__sort_by = sort_by
         self.__selenium = Selenium()
         self.__calendar = Calendar()
@@ -250,6 +252,9 @@ class APNewsCollector:
             for element in self.__selenium.get_webelements(
                 "css:div.SearchResultsModule-results div.PageList-items-item"
             ):
+                if datetime.now().timestamp() >= self.__timeout or not remaining_faults:
+                    return
+
                 news = News(element)
 
                 if not news.date:
@@ -277,7 +282,7 @@ class APNewsCollector:
             if current < total:
                 self.__selenium.click_element("css:div.Pagination-nextPage")
             else:
-                remaining_faults = 0
+                return
 
     def __output_results(self):
         self.__selenium.screenshot(
