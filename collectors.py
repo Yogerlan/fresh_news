@@ -5,6 +5,8 @@ from hashlib import sha1
 
 from RPA.Browser.Selenium import Selenium
 from RPA.Calendar import Calendar
+from selenium.common.exceptions import (NoSuchElementException,
+                                        StaleElementReferenceException)
 from selenium.webdriver.common.by import By
 
 OUTPUT_DIR = "output"
@@ -21,49 +23,74 @@ class News:
         self.__get_picture()
 
     def __get_title(self):
-        """Gets title"""
-        try:
-            self.__title = self.__element.find_element(
-                by=By.CLASS_NAME,
-                value="PagePromo-title"
-            ).find_element(
-                by=By.CLASS_NAME,
-                value="PagePromoContentIcons-text"
-            ).text
-        except Exception as ex:
-            logging.exception("News__get_title", ex.args)
-            self.__title = None
+        """Gets the title"""
+        attempts = 2
+
+        while attempts:
+            try:
+                self.__title = self.__element.find_element(
+                    by=By.CLASS_NAME,
+                    value="PagePromo-title"
+                ).find_element(
+                    by=By.CLASS_NAME,
+                    value="PagePromoContentIcons-text"
+                ).text
+
+                break
+            except (NoSuchElementException, StaleElementReferenceException) as ex:
+                attempts -= 1
+                logging.info(
+                    f"News__get_title ({ex}) remaining attempts: {attempts}"
+                )
+                self.__title = ""
 
     def __get_date(self):
-        """Gets date from timestamp"""
-        try:
-            timestamp = self.__element.find_element(
-                by=By.TAG_NAME,
-                value="bsp-timestamp"
-            ).get_attribute("data-timestamp")
+        """Gets the date from timestamp"""
+        attempts = 2
 
-            self.__date = datetime.fromtimestamp(
-                int(timestamp) // 1000
-            ).strftime(DATE_FORMAT)
-        except Exception as ex:
-            # logging.exception("News__get_date", ex.args)
-            self.__date = None
+        while attempts:
+            try:
+                timestamp = self.__element.find_element(
+                    by=By.TAG_NAME,
+                    value="bsp-timestamp"
+                ).get_attribute("data-timestamp")
+
+                self.__date = datetime.fromtimestamp(
+                    int(timestamp) // 1000
+                ).strftime(DATE_FORMAT)
+
+                break
+            except (NoSuchElementException, StaleElementReferenceException) as ex:
+                attempts -= 1
+                logging.info(
+                    f"News__get_date ({ex}) remaining attempts: {attempts}"
+                )
+                self.__date = ""
 
     def __get_description(self):
-        """Gets description"""
-        try:
-            self.__description = self.__element.find_element(
-                by=By.CLASS_NAME,
-                value="PagePromo-description"
-            ).find_element(
-                by=By.CLASS_NAME,
-                value="PagePromoContentIcons-text"
-            ).text
-        except Exception as ex:
-            logging.exception("News__get_description", ex.args)
-            self.__description = None
+        """Gets the description"""
+        attempts = 2
+
+        while attempts:
+            try:
+                self.__description = self.__element.find_element(
+                    by=By.CLASS_NAME,
+                    value="PagePromo-description"
+                ).find_element(
+                    by=By.CLASS_NAME,
+                    value="PagePromoContentIcons-text"
+                ).text
+
+                break
+            except (NoSuchElementException, StaleElementReferenceException) as ex:
+                attempts -= 1
+                logging.info(
+                    f"News__get_description ({ex}) remaining attempts: {attempts}"
+                )
+                self.__description = ""
 
     def __get_picture(self):
+        """Gets the picture and saves it"""
         try:
             picture_element = self.__element.find_element(
                 by=By.TAG_NAME,
@@ -79,9 +106,9 @@ class News:
                 f.write(pic_bytes)
 
             self.__picture = picture
-        except Exception as ex:
-            # logging.exception("News__get_picture", ex.args)
-            self.__picture = None
+        except NoSuchElementException as ex:
+            logging.info(f"News__get_picture ({ex})")
+            self.__picture = ""
 
     @property
     def date(self):
@@ -96,6 +123,7 @@ class News:
             print(f"Picture: {self.__picture}")
 
         print("")
+
 
 class APNewsCollector:
     """
@@ -120,7 +148,7 @@ class APNewsCollector:
 
         # Optimization: checks pictures folder once
         if not os.path.exists(PICTURES_DIR):
-                os.mkdir(PICTURES_DIR)
+            os.mkdir(PICTURES_DIR)
 
     def collect_news(self):
         self.__open_website()
@@ -131,137 +159,100 @@ class APNewsCollector:
 
     def __open_website(self):
         """Opens the browser instance & navigates to the news website"""
-        try:
-            self.__selenium.open_browser(
-                self.URL,
-                'headlessfirefox',
-                service_log_path=os.path.join(OUTPUT_DIR, "geckodriver.log")
-            )
-            self.__selenium.set_selenium_implicit_wait(5)
-        except Exception as ex:
-            logging.exception("APNewsCollector__open_website", ex.args)
-            self.__selenium.screenshot(
-                filename=os.path.join(
-                    OUTPUT_DIR,
-                    "open_website_exception.png"
-                )
-            )
+        self.__selenium.open_browser(
+            self.URL,
+            'headlessfirefox',
+            service_log_path=os.path.join(OUTPUT_DIR, "geckodriver.log")
+        )
+        self.__selenium.set_selenium_implicit_wait(5)
 
     def __search_news(self):
         """Seeks news using the search phrase"""
-        try:
-            # Accept onetrush modal
-            if self.__selenium.is_element_visible(
+        # Accept onetrush modal
+        if self.__selenium.is_element_visible(
+            self.ONE_TRUST_ACCEPT_BTN
+        ):
+            self.__selenium.click_button(
                 self.ONE_TRUST_ACCEPT_BTN
-            ):
-                self.__selenium.click_button(
-                    self.ONE_TRUST_ACCEPT_BTN
-                )
+            )
 
-            self.__selenium.click_button(
-                "css:button.SearchOverlay-search-button"
-            )
-            self.__selenium.input_text(
-                'css:input.SearchOverlay-search-input[name="q"]',
-                self.__search_phrase
-            )
-            self.__selenium.click_button(
-                "css:button.SearchOverlay-search-submit"
-            )
-        except Exception as ex:
-            logging.exception("APNewsCollector__search_news", ex.args)
-            self.__selenium.screenshot(
-                filename=os.path.join(OUTPUT_DIR, "search_news_exception.png")
-            )
+        self.__selenium.click_button(
+            "css:button.SearchOverlay-search-button"
+        )
+        self.__selenium.input_text(
+            'css:input.SearchOverlay-search-input[name="q"]',
+            self.__search_phrase
+        )
+        self.__selenium.click_button(
+            "css:button.SearchOverlay-search-submit"
+        )
 
     def __filter_news(self):
         """Sorts the search results & filters them by categories"""
-        try:
-            if self.__sort_by:
-                self.__selenium.select_from_list_by_label(
-                    'css:select.Select-input[name="s"]',
-                    self.__sort_by
-                )
-
-            categories = {category.lower()
-                          for category in self.__categories.split(",")}
-            found = True
-
-            while found and len(categories):
-                found = False
-                self.__selenium.wait_until_page_contains_element(
-                    "css:div.SearchFilter-heading"
-                )
-
-                self.__selenium.click_element(
-                    "css:div.SearchFilter-heading"
-                )
-
-                for element in self.__selenium.get_webelements(
-                    "css:div.SearchFilterInput div.CheckboxInput label.CheckboxInput-label"
-                ):
-                    element_text = element.text.lower()
-
-                    if element_text in categories:
-                        self.__selenium.click_element(element)
-                        found = True
-                        categories.remove(element_text)
-
-                        break
-        except Exception as ex:
-            logging.exception("APNewsCollector__filter_news", ex.args)
-            self.__selenium.screenshot(
-                "css:div.SearchResultsModule-wrapper",
-                os.path.join(OUTPUT_DIR, "filter_news_exception.png")
+        if self.__sort_by:
+            self.__selenium.select_from_list_by_label(
+                'css:select.Select-input[name="s"]',
+                self.__sort_by
             )
+
+        categories = {category.lower()
+                      for category in self.__categories.split(",")}
+        found = True
+
+        while found and len(categories):
+            found = False
+            self.__selenium.click_element_when_clickable(
+                "css:div.SearchFilter-heading"
+            )
+
+            for element in self.__selenium.get_webelements(
+                "css:div.SearchFilterInput div.CheckboxInput label.CheckboxInput-label"
+            ):
+                element_text = element.text.lower()
+
+                if element_text in categories:
+                    self.__selenium.click_element_when_clickable(element)
+                    found = True
+                    categories.remove(element_text)
+
+                    break
 
     def __get_news(self):
         """Gets the news list within the requested months"""
-        try:
-            remaining_faults = self.FAULTS_TOLERANCE
+        remaining_faults = self.FAULTS_TOLERANCE
 
-            while remaining_faults > 0:
-                self.__selenium.wait_until_page_contains_element(
-                    "css:div.Pagination-pageCounts"
+        while remaining_faults > 0:
+            for element in self.__selenium.get_webelements(
+                "css:div.SearchResultsModule-results div.PageList-items-item"
+            ):
+                news = News(element)
+
+                if not news.date:
+                    remaining_faults -= 1
+
+                    continue
+
+                months_diff = self.__calendar.time_difference_in_months(
+                    news.date,
+                    self.__now,
                 )
 
-                for element in self.__selenium.get_webelements(
-                    "css:div.SearchResultsModule-results div.PageList-items-item"
-                ):
-                    news = News(element)
+                if months_diff > self.__months:
+                    remaining_faults -= 1
 
-                    if news.date is None:
-                        remaining_faults -= 1
+                    continue
 
-                        continue
+                news.print_elements()
+                remaining_faults = self.FAULTS_TOLERANCE
 
-                    months_diff = self.__calendar.time_difference_in_months(
-                        news.date,
-                        self.__now,
-                    )
+            current, total = self.__selenium.get_webelement(
+                "css:div.Pagination-pageCounts"
+            ).text.split(" of ")
 
-                    if months_diff > self.__months:
-                        remaining_faults -= 1
-
-                        continue
-
-                    news.print_elements()
-                    remaining_faults = self.FAULTS_TOLERANCE
-
-                current, total = self.__selenium.get_webelement(
-                    "css:div.Pagination-pageCounts"
-                ).text.split(" of ")
-
-                if current < total:
-                    self.__selenium.click_element("css:div.Pagination-nextPage")
-                else:
-                    remaining_faults = 0
-        except Exception as ex:
-            logging.exception("APNewsCollector__get_news", ex.args)
-            self.__selenium.screenshot(
-                "css:div.SearchResultsModule-wrapper",
-                os.path.join(OUTPUT_DIR, "get_news_exception.png")
-            )
+            if current < total:
+                self.__selenium.click_element("css:div.Pagination-nextPage")
+            else:
+                remaining_faults = 0
 
     def __output_results(self):
         self.__selenium.screenshot(
