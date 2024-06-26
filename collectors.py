@@ -91,24 +91,35 @@ class News:
 
     def __get_picture(self):
         """Gets the picture and saves it"""
-        try:
-            picture_element = self.__element.find_element(
-                by=By.TAG_NAME,
-                value="img"
-            )
+        attempts = 2
 
-            # Optimization: avoid getting binary data twice
-            pic_bytes = picture_element.screenshot_as_png
-            pic_sha1 = sha1(pic_bytes).hexdigest()
-            picture = f"{pic_sha1}.png"
+        while attempts:
+            try:
+                picture_element = self.__element.find_element(
+                    by=By.TAG_NAME,
+                    value="img"
+                )
 
-            with open(os.path.join(PICTURES_DIR, picture), "wb") as f:
-                f.write(pic_bytes)
+                pic_bytes = picture_element.screenshot_as_png
+                pic_sha1 = sha1(pic_bytes).hexdigest()
+                picture = f"{pic_sha1}.png"
 
-            self.__picture = picture
-        except NoSuchElementException as ex:
-            logging.info(f"News__get_picture ({ex})")
-            self.__picture = ""
+                with open(os.path.join(PICTURES_DIR, picture), "wb") as f:
+                    f.write(pic_bytes)
+
+                self.__picture = picture
+
+                break
+            except NoSuchElementException as ex:
+                logging.info(f"News__get_picture ({ex})")
+                self.__picture = ""
+                break
+            except StaleElementReferenceException as ex:
+                attempts -= 1
+                logging.info(
+                    f"News__get_picture ({ex}) remaining attempts: {attempts}"
+                )
+                self.__picture = ""
 
     @property
     def date(self):
@@ -228,7 +239,7 @@ class APNewsCollector:
             except (NoSuchElementException, StaleElementReferenceException) as ex:
                 attempts -= 1
                 logging.info(
-                    f"ApNewsCollector__click_searchfilter_headings ({ex}) remaining attempts: {attempts}"
+                    f"APNewsCollector__click_searchfilter_headings ({ex}) remaining attempts: {attempts}"
                 )
 
     def __get_news(self):
