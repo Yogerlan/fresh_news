@@ -69,13 +69,15 @@ class News:
                 by=By.TAG_NAME,
                 value="img"
             )
-            pic_sha1 = sha1(picture_element.screenshot_as_png).hexdigest()
+
+            # Optimization: avoid getting binary data twice
+            pic_bytes = picture_element.screenshot_as_png
+            pic_sha1 = sha1(pic_bytes).hexdigest()
             picture = f"{pic_sha1}.png"
 
-            if not os.path.exists(PICTURES_DIR):
-                os.mkdir(PICTURES_DIR)
+            with open(os.path.join(PICTURES_DIR, picture), "wb") as f:
+                f.write(pic_bytes)
 
-            picture_element.screenshot(os.path.join(PICTURES_DIR, picture))
             self.__picture = picture
         except Exception as ex:
             # logging.exception("News__get_picture", ex.args)
@@ -104,7 +106,7 @@ class APNewsCollector:
     """
 
     URL = "https://apnews.com/"
-    FAULTS_TOLERANCE = 10
+    FAULTS_TOLERANCE = 5
     ONE_TRUST_ACCEPT_BTN = "css:button#onetrust-accept-btn-handler"
 
     def __init__(self, search_phrase, categories="", months=0, sort_by="Newest"):
@@ -115,6 +117,10 @@ class APNewsCollector:
         self.__sort_by = sort_by
         self.__selenium = Selenium()
         self.__calendar = Calendar()
+
+        # Optimization: checks pictures folder once
+        if not os.path.exists(PICTURES_DIR):
+                os.mkdir(PICTURES_DIR)
 
     def collect_news(self):
         self.__open_website()
