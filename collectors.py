@@ -59,6 +59,7 @@ class APNewsCollector:
                 'headlessfirefox',
                 service_log_path=os.path.join(OUTPUT_DIR, "geckodriver.log"),
             )
+            self.__selenium.set_selenium_implicit_wait(5)
         except Exception as ex:
             logging.exception("APNewsCollector__open_website", ex.args)
             self.__selenium.screenshot(
@@ -72,11 +73,6 @@ class APNewsCollector:
         """Seeks news using the search phrase"""
         try:
             # Accept onetrush modal
-            self.__selenium.wait_until_page_contains_element(
-                self.ONE_TRUST_ACCEPT_BTN,
-                5,
-            )
-
             if self.__selenium.is_element_visible(
                 self.ONE_TRUST_ACCEPT_BTN,
             ):
