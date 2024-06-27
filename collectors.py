@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from datetime import datetime
 from hashlib import sha1
 
@@ -14,12 +15,15 @@ DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 
 class News:
-    def __init__(self, element):
+    def __init__(self, element, search_phrase):
         self.__element = element
+        self.__search_phrase = search_phrase
         self.__get_title()
         self.__get_date()
         self.__get_description()
         self.__get_picture()
+        self.__get_count()
+        self.__get_money()
 
     def __get_title(self):
         """Gets the title"""
@@ -120,6 +124,21 @@ class News:
                 )
                 self.__picture = ""
 
+    def __get_count(self):
+        """Counts the occurrences of the search phrase in the title and description"""
+        self.__count = (self.__title.count(self.__search_phrase) +
+                        self.__description.count(self.__search_phrase))
+
+    def __get_money(self):
+        """Detects money occurrences in the title or description"""
+        """Possible formats: $11.1|$111,111.11|11 dollars|11 USD"""
+        pattern = "|".join(["\$(\d|[1-9]\d*)\.\d($|\D)",
+                            "\$(\d|[1-9]\d{0,2}(,\d{3})*)\.\d\d($|\D)",
+                            "(^|\D)(\d|[1-9]\d*) dollars",
+                            "(^|\D)(\d|[1-9]\d*) USD"])
+        self.__money = (re.search(pattern, self.__title) or
+                        re.search(pattern, self.__description)) is not None
+
     @property
     def date(self):
         return self.__date
@@ -132,7 +151,8 @@ class News:
         if self.__picture:
             print(f"Picture: {self.__picture}")
 
-        print("")
+        print(f"Count: {self.__count}")
+        print(f"Money: {self.__money}\n")
 
 
 class APNewsCollector:
@@ -250,7 +270,7 @@ class APNewsCollector:
                 if datetime.now().timestamp() >= self.__timeout or not remaining_faults:
                     return
 
-                news = News(element)
+                news = News(element, self.__search_phrase)
 
                 if not news.date:
                     remaining_faults -= 1
