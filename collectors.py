@@ -6,6 +6,7 @@ from hashlib import sha1
 
 from RPA.Browser.Selenium import Selenium
 from RPA.Calendar import Calendar
+from RPA.Excel.Files import Files
 from selenium.common.exceptions import (NoSuchElementException,
                                         StaleElementReferenceException)
 from selenium.webdriver.common.by import By
@@ -15,9 +16,10 @@ DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 
 class News:
-    def __init__(self, element, search_phrase):
+    def __init__(self, element, search_phrase, files):
         self.__element = element
         self.__search_phrase = search_phrase
+        self.__files = files
         self.__get_title()
         self.__get_date()
         self.__get_description()
@@ -143,16 +145,15 @@ class News:
     def date(self):
         return self.__date
 
-    def print_elements(self):
-        print(f"Title: {self.__title}")
-        print(f"Date: {self.__date}")
-        print(f"Description: {self.__description}")
-
-        if self.__picture:
-            print(f"Picture: {self.__picture}")
-
-        print(f"Count: {self.__count}")
-        print(f"Money: {self.__money}\n")
+    def save_elements(self):
+        self.__files.append_rows_to_worksheet({
+            "title": [self.__title],
+            "date": [f"{self.__date}"],
+            "description": [self.__description],
+            "picture": [self.__picture],
+            "count": [self.__count],
+            "money": [f"{self.__money}"]
+        })
 
 
 class APNewsCollector:
@@ -163,6 +164,7 @@ class APNewsCollector:
     and performs the news recollection.
     """
 
+    WB_PATH = os.path.join(OUTPUT_DIR, "apnews.xlsx")
     URL = "https://apnews.com/"
     FAULTS_TOLERANCE = 5
     ONE_TRUST_ACCEPT_BTN = "css:button#onetrust-accept-btn-handler"
@@ -177,13 +179,23 @@ class APNewsCollector:
         self.__sort_by = sort_by
         self.__selenium = Selenium()
         self.__calendar = Calendar()
+        self.__files = Files()
 
     def collect_news(self):
+        self.__files.create_workbook(self.WB_PATH, sheet_name="Fresh News")
+        self.__files.append_rows_to_worksheet({
+            "title": ["Title"],
+            "date": ["Date"],
+            "description": ["Description"],
+            "picture": ["Picture"],
+            "count": ["Count"],
+            "money": ["Money"]
+        })
         self.__open_website()
         self.__search_news()
         self.__filter_news()
         self.__get_news()
-        self.__output_results()
+        self.__files.save_workbook()
 
     def __open_website(self):
         """Opens the browser instance & navigates to the news website"""
@@ -270,7 +282,7 @@ class APNewsCollector:
                 if datetime.now().timestamp() >= self.__timeout or not remaining_faults:
                     return
 
-                news = News(element, self.__search_phrase)
+                news = News(element, self.__search_phrase, self.__files)
 
                 if not news.date:
                     remaining_faults -= 1
@@ -287,7 +299,7 @@ class APNewsCollector:
 
                     continue
 
-                news.print_elements()
+                news.save_elements()
                 remaining_faults = self.FAULTS_TOLERANCE
 
             current, total = self.__selenium.get_webelement(
@@ -298,11 +310,3 @@ class APNewsCollector:
                 self.__selenium.click_element("css:div.Pagination-nextPage")
             else:
                 return
-
-    def __output_results(self):
-        self.__selenium.screenshot(
-            filename=os.path.join(OUTPUT_DIR, "apnews.png")
-        )
-        # self.__selenium.print_page_as_pdf(
-        #     filename=os.path.join(OUTPUT_DIR, "apnews.pdf")
-        # )
